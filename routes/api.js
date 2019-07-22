@@ -1,6 +1,8 @@
 var express = require('express');
 var router = express.Router();
 const User = require('./../models/user.js');
+const Clue = require('./../models/clue.js');
+const ClueLog = require('./../models/log.js');
 const authCodeFunc = require('./../utils/authCode.js');
 
 
@@ -112,7 +114,7 @@ const clueController = {
       })
       return
     }
-
+    
     try {
       const clues = await Clue.insert({name,phone,utm,created_time})
       res.json({
@@ -122,6 +124,60 @@ const clueController = {
     } catch (error) {
       console.log(error);
       res.json({code:0,message:'内部错误'})
+    }
+  },
+  addLog:async function(req,res,next){
+    let content = req.body.content;
+    let created_time = new Date();
+    let clue_id = req.params.id;
+
+    
+    if (!content) {
+      res.json({
+        code:0,
+        message:'缺少参数'
+      })
+    }
+
+    try {
+      const clue = await ClueLog.insert({
+        content,created_time,clue_id
+      });
+      res.json({
+        code:200,
+        data:clue
+      })  
+    } catch (error) {
+      console.log(error);
+      res.json({code:0,message:'内部错误'})
+    }
+  },
+  update: async function(req,res,next) {
+    let status = req.body.status;
+    console.log(status);
+    
+    let remark = req.body.remark;
+    let id = req.params.id;
+    let user_id = req.body.user_id;
+    if(!status || !remark){
+      res.json({ code: 0, message: '缺少必要参数' });
+      return
+    }
+
+    try{
+      const clue = await Clue.update( id ,{ 
+        status,user_id,remark
+      });
+      res.json({ 
+        code: 200, 
+        data: clue
+      })
+    }catch(e){
+      console.log(e)
+      res.json({ 
+        code: 0,
+        message: '内部错误'
+      })
     }
   },
 }
@@ -144,6 +200,10 @@ router.get('/logout',async function(req,res,next){
 })
 
 router.post('/clue',clueController.insert)
+
+router.put('/clue/:id',clueController.update)
+
+router.post('/clue/:id/log', clueController.addLog);
 
 
 

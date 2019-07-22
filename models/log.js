@@ -1,9 +1,9 @@
 const Base = require('./base.js');
 
-class Cluelog extends Base {
+class ClueLog extends Base {
     constructor(props = 'clue_log'){
         super(props);
     }
 }
 
-module.exports = Cluelog
+module.exports = new ClueLog()

@@ -1,8 +1,9 @@
 var express = require('express');
 var router = express.Router();
 const User = require('./../models/user.js');
-const { formatTime } = require('./../utils/date.js');
 const Clue = require('./../models/clue.js');
+const ClueLog = require('./../models/log.js');
+const { formatTime } = require('./../utils/date.js');
 
 // 方法放置区
 
@@ -55,9 +56,19 @@ const authMiddleware = {
 const clueController = {
   show: async function(req,res,next){
     try{
-      const clues = await Clue.all();
+      // const clues = await Clue.all();
+      const role = res.locals.userInfo.role;
+      const user_id = res.locals.userInfo.id;
+      // console.log(role,user_id);
+      let params = {};
+      if (role == 2) {
+        params.user_id = user_id
+      }
+      const clues = await Clue.joinUser(params);
+      console.log(clues)
       res.locals.clues = clues.map((data)=>{
         data.created_time_display = formatTime(data.created_time);
+        // console.log(data)
         return data
       });
       res.render('admin/clue.tpl',res.locals)
@@ -66,6 +77,30 @@ const clueController = {
       res.render('error',res.locals);
     }
   },
+  log: async function(req,res,next) {
+    try{
+      const id = req.params.id;
+      const clues = await Clue.select({ id })
+      const logs = await ClueLog.select({ clue_id : id})
+      const users = await User.select({ role: 2 })
+      res.locals.users = users.map(data => {
+        return {
+          id: data.id,
+          name: data.name
+        }
+      });
+      res.locals.clue = clues[0]
+      res.locals.clue.created_time_display = formatTime(res.locals.clue.created_time);
+      res.locals.logs = logs.map((data)=>{
+        data.created_time_display = formatTime(data.created_time);
+        return data
+      });
+      res.render('admin/clue_log.tpl',res.locals)
+    }catch(e){
+      res.locals.error = e;
+      res.render('error',res.locals);
+    }
+  }
 }
 
 /* GET home page. */
@@ -93,7 +128,7 @@ router.get('/admin/user/:id/edit',authMiddleware.mustLogin,async function(req,re
 
 router.get('/admin/clue',authMiddleware.mustLogin,clueController.show)
 
-router.get('/admin/clue/:id',authMiddleware.mustLogin,function(req,res,next){
+router.get('/admin/clue/:id',authMiddleware.mustLogin,clueController.log,function(req,res,next){
   res.render('admin/clue_log')
 })
 
